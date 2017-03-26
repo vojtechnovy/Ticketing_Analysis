@@ -1,6 +1,7 @@
 ## Analysis is only for one calendar year, months 1 - 12 (Jan - Dec)
 ## "##" marks new plot/category while "#" is followed by comment
 
+
 ## Imports
 
 # pandas
@@ -16,9 +17,11 @@ import seaborn as sns
 sns.set_style('whitegrid')
 %matplotlib inline
 
+
 ## loading dataset
 df = pd.read_excel("C:\\Users\\antonin\\Desktop\\analysis_worksheet.xlsx", sheetname="LE")
 print(df[:0])
+
 
 ## Some of the names of columns are not ideal, let's rename them:
 df = df.rename(columns = {'Proc. Person':'Proc_Person',
@@ -29,11 +32,14 @@ df = df.rename(columns = {'Proc. Person':'Proc_Person',
                           'Last Update - Tick.Creation':'Duration',
                          })
 
+
 ## count of tickets raised per month of year
 sns.countplot(x='Raised_Month', data=df)
 
+
 ## 10 most used processes (categories)
 sns.countplot(y='Process', data=df, order=df.Process.value_counts().iloc[:10].index)
+
 
 ## count of tickets raised per month related to hiring (same can be done by changing process names)
 y = df.set_index(['Service'])
