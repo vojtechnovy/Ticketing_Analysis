@@ -1,0 +1,167 @@
+## Analysis is only for one calendar year, months 1 - 12 (Jan - Dec)
+## "##" marks new plot/category while "#" is followed by comment
+
+## Imports
+
+# pandas
+import pandas as pd
+from pandas import Series,DataFrame
+
+# numpy, matplotlib, seaborn
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.legend_handler import HandlerLine2D
+import seaborn as sns
+sns.set_style('whitegrid')
+%matplotlib inline
+
+## loading dataset
+df = pd.read_excel("C:\\Users\\antonin\\Desktop\\analysis_worksheet.xlsx", sheetname="LE")
+print(df[:0])
+
+## Some of the names of columns are not ideal, let's rename them:
+df = df.rename(columns = {'Proc. Person':'Proc_Person',
+                          'Ticket Raised (month)':'Raised_Month',
+                          'Ticket Raised (week)':'Raised_Week',
+                          'Ticket Raised (Hour)':'Raised_Hour',
+                          'Company LE':'Company',
+                          'Last Update - Tick.Creation':'Duration',
+                         })
+
+## count of tickets raised per month of year
+sns.countplot(x='Raised_Month', data=df)
+
+## 10 most used processes (categories)
+sns.countplot(y='Process', data=df, order=df.Process.value_counts().iloc[:10].index)
+
+## count of tickets raised per month related to hiring (same can be done by changing process names)
+y = df.set_index(['Service'])
+y2 = y.loc[y.index.isin(['Contract Request','Hiring', 'Employment'])]
+# plot based on counts of records per Raised_Month
+g = sns.factorplot(x="Raised_Month", data=y2, kind="count", palette="BuPu", size=4, aspect=1.5)
+# add title
+plt.subplots_adjust(top=0.9)
+g.fig.suptitle('Contract Tickets Processed')
+
+
+## Count of tickets processed per employee
+## Bar plot with closed ticket count per employee
+fig, axis1 = plt.subplots(1,1,figsize=(7,7))
+sns.countplot(y='Proc_Person', data=df, order=df.Proc_Person.value_counts().iloc[:10].index)
+
+
+## Let's examine what kind of tickets each employee is doing
+## Bar graph of tickets processed per category by one person
+y = df.set_index(['Proc_Person'])
+y2 = y.loc[y.index.isin(['Novy Vojtech'])]
+# plot based on counts of records per Category (and since there are too many categories let's limit them to max 10)
+g = sns.factorplot(y="Service", data=y2, kind="count", palette="BuPu", size=4, aspect=1.5, order=df.Service.value_counts().iloc[:10].index)
+# add title
+plt.subplots_adjust(top=0.9)
+g.fig.suptitle('Tickets Processed per Category by VN')
+
+
+## Examine how many tickets are raised per company (sorted)
+## Bar graph of tickets raised per company
+g = sns.countplot(y='Company', data=df, order=df.Company.value_counts().iloc[:15].index)
+
+
+## How much time did it take for 10 most work-loaded people to close their tickets (for ilustration/obv. this could be done for all)
+## Also note that this time is averaged and therefore very dangerous, don't take it seriously since it's affected by different type of work
+sns.factorplot('Proc_Person','Duration', data=df,size=4,aspect=3, order=df.Proc_Person.value_counts().iloc[:10].index)
+
+## Explore if there were any changes in speed of resolving tickets throughout the year
+## Factorplot showing average amount of days which it took to close a ticket for that particular month
+sns.factorplot('Raised_Month','Duration', data=df,size=4,aspect=3)
+
+
+## Creating heatmap x= month, y= person, count= tickets done
+y = df.groupby(["Proc_Person", "Raised_Month"]).size().reset_index(name="Count")
+
+# Preparation of Data Frame
+fc = y
+fc_pivot = fc.pivot("Proc_Person", "Raised_Month", "Count")
+
+# Adding row 'Count_sum' as a sum of all tickets for a particular person (ie sum of rows - it will be hidden) 
+fc_pivot['Count_sum'] = fc_pivot.sum(axis=1)
+
+# We will want to show only people who did more than 300 tickets overall
+# Therefore creating a new Data Frame with row sums over 300 (tickets done overall are > 300)
+fcr_pivot = fc_pivot[(fc_pivot.Count_sum > 300)]
+
+# sorting by overall ticket counts per person 
+fcr_pivot = fcr_pivot.sort_values(by='Count_sum', ascending=False)
+
+# Draw a heatmap with the numeric values in each cell // '[:, 0:12:]' change 12 to 13 - that way sum can be shown
+fig, ax = plt.subplots(figsize=(7,7))         # Sample figsize in inches
+ax.set_title('Tickets Processed')
+sns.heatmap(fcr_pivot.iloc[:, 0:12:], annot=True, linewidths=.2, fmt='g', cmap='Blues', ax=ax)
+
+
+## Let's draw similar map for Service
+y = df.groupby(["Service", "Raised_Month"]).size().reset_index(name="Count")
+
+# y.fillna(value=0)
+# print(y[0:2])
+
+fc = y[(y.Count > 10)]
+fc_pivot = fc.pivot("Service", "Raised_Month", "Count")
+
+# fc_pivot.shape
+
+# Adding row 'Count_sum' as a sum of all tickets for a particular person (ie sum of rows)
+fc_pivot['Count_sum'] = fc_pivot.sum(axis=1)
+
+# Creating a new Data Frame with row sums over certain number (if we want to limit the information in one heatmap)
+fcr_pivot = fc_pivot[(fc_pivot.Count_sum > 10)]
+
+# Sorting dataset according to count_sum column
+fcr_pivot = fcr_pivot.sort_values(by='Count_sum', ascending=False)
+
+# Draw a heatmap with the numeric values in each cell
+fig, ax = plt.subplots(figsize=(7,12))         ## Sample figsize in inches(x,y)
+ax.set_title('Tickets Processed')
+sns.heatmap(fcr_pivot.iloc[:, 0:12:], annot=True, linewidths=.2, fmt='g', cmap='Blues', ax=ax)
+
+
+## Line Plot for comparing two processes with rest grayed out for reference
+y = df.groupby(["Process", "Raised_Month"]).size().reset_index(name="Count")
+
+# defining line plots
+y_pivot = y.pivot("Raised_Month", "Process", "Count")
+Payroll = y_pivot['Payroll']
+Recruiting = y_pivot['Recruiting']
+
+# colouring of lines
+y_pivot.plot(legend = False, style = 'lightgrey')
+Payroll.plot(style = 'blue', legend = True)
+Recruiting.plot(style = 'red', legend = True)
+
+
+## Line Plot for comparing two people with rest grayed out for reference (count of tickets closed per month)
+## Similar to above, but we can add suptitle, axes names etc...
+fig = plt.figure()
+fig.suptitle('Comparing 2 Employees', fontsize=14, fontweight='bold')
+
+y = df.groupby(["Proc_Person", "Raised_Month"]).size().reset_index(name="Count")
+
+# defining line plots
+y_pivot = y.pivot("Raised_Month", "Proc_Person", "Count")
+Vojtech = y_pivot['Novy Vojtech']
+Person2 = y_pivot['Person2']
+
+# colouring of lines
+plt.plot(y_pivot, color = 'lightgrey')
+plt.plot(Vojtech, color = 'blue', label='Vojtech Novy')
+plt.plot(Sona, color = 'red', label='Person2')
+
+# legend
+red_patch = mpatches.Patch(color='red', label='Vojtech Novy')
+blue_patch = mpatches.Patch(color='blue', label='Person2')
+plt.legend(handles=[red_patch, blue_patch])
+
+# force plot to start at 1st month (not 0th)
+plt.xlim(xmin=1)
+
+plt.show()
