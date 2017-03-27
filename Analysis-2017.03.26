@@ -160,7 +160,7 @@ Person2 = y_pivot['Person2']
 # colouring of lines
 plt.plot(y_pivot, color = 'lightgrey')
 plt.plot(Vojtech, color = 'blue', label='Vojtech Novy')
-plt.plot(Sona, color = 'red', label='Person2')
+plt.plot(Person2, color = 'red', label='Person2')
 
 # legend
 red_patch = mpatches.Patch(color='red', label='Vojtech Novy')
