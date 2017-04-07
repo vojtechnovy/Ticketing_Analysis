@@ -3,6 +3,9 @@
 
 
 ## Imports
+import os
+import json
+import time
 
 # pandas
 import pandas as pd
@@ -32,6 +35,44 @@ df = df.rename(columns = {'Proc. Person':'Proc_Person',
                           'Last Update - Tick.Creation':'Duration',
                          })
 
+
+## Load description categories dictionary (used in solutions below)
+os.chdir('C:\\Users\\antonin\\Desktop\\')
+# Reading the json as a dict
+with open('dict.json') as json_data:
+    category_name = json.load(json_data)
+
+
+## Assigning categories based on description
+pd.options.mode.chained_assignment = None  # default='warn'
+df3 = pd.DataFrame()
+df["Category"] = np.nan
+
+# start_time = time.time()
+for key, value in category_name.items():
+    mask = np.column_stack([df['Description'].str.contains(key, na=False) for col in df])
+    df2 = df.loc[mask.any(axis=1)]
+    df2['Category'].notnull
+    df2["Category"] = df2["Category"].fillna(value)
+    df3 = df3.combine_first(df2)
+## combine assigned and unassigned 
+df = df3.combine_first(df)
+# print("-- %s seconds --" % (time.time() - start_time))
+
+## Save to CSV
+#df3.to_csv("C:\\Users\\antonin\\Desktop\\Final_Analysis_UPD.csv")
+
+
+## Creating time-category columns
+df['year'] = pd.DatetimeIndex(df['Creation Date']).year
+df['month'] = pd.DatetimeIndex(df['Creation Date']).month
+df['hour'] = pd.DatetimeIndex(df['Creation Date']).hour
+df['day'] = pd.DatetimeIndex(df['Creation Date']).day
+df['week'] = pd.DatetimeIndex(df['Creation Date']).week
+
+### -----------------------------------------------------------------------------------------------
+### ------------------------------------------- Analysis ------------------------------------------
+### -----------------------------------------------------------------------------------------------
 
 ## count of tickets raised per month of year
 sns.countplot(x='Raised_Month', data=df)
